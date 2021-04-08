@@ -169,10 +169,12 @@ public class Patcher {
         return validateJar(digest, data);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static Path validateJar(MessageDigest digest, PatchData data) {
         progress.setValue(20);
         status.setText("Validating vanilla jar...");
         Path cache = Paths.get("cache");
+        cache.toFile().mkdirs();
         Path vanillaJar = validateVanillaJar(digest, cache, data);
         if (vanillaJar == null) return null;
         progress.setValue(40);
