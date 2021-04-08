@@ -41,7 +41,6 @@
                         </manifest>
                         <manifestEntries>
                             <Main-Class>net.blueberrymc.jbsdiffPatcher.Patcher</Main-Class>
-                            <Premain-Class>net.blueberrymc.jbsdiffPatcher.Agent</Premain-Class>
                         </manifestEntries>
                     </archive>
                 </configuration>
@@ -49,11 +48,24 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <!-- TODO: Move to repo.blueberrymc.net -->
+            <id>acrylic-repo</id>
+            <url>https://repo2.acrylicstyle.xyz/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>io.sigpipe</groupId>
             <artifactId>jbsdiff</artifactId>
             <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.blueberrymc</groupId>
+            <artifactId>native-util</artifactId>
+            <version>1.0.0</version>
         </dependency>
     </dependencies>
 </project>

@@ -2,6 +2,7 @@ package net.blueberrymc.jbsdiffPatcher;
 
 import io.sigpipe.jbsdiff.InvalidHeaderException;
 import io.sigpipe.jbsdiff.Patch;
+import net.blueberrymc.native_util.NativeUtil;
 import org.apache.commons.compress.compressors.CompressorException;
 
 import javax.swing.*;
@@ -21,6 +22,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.jar.JarInputStream;
 
@@ -70,23 +72,7 @@ public class Patcher {
                 ex.printStackTrace();
                 return;
             }
-            int result = Agent.addToClassPath(path);
-            if (result == 1) {
-                status.setText("Error: Could not retrieve Instrumentation API");
-                progress.setValue(100);
-                close.setEnabled(true);
-                return;
-            } else if (result == 2) {
-                status.setText("Error: Could not add patched jar to classpath");
-                progress.setValue(100);
-                close.setEnabled(true);
-                return;
-            } else if (result != 0) {
-                status.setText("Error: Unknown error (" + result + ")");
-                progress.setValue(100);
-                close.setEnabled(true);
-                return;
-            }
+            NativeUtil.appendToSystemClassLoaderSearch(path.toFile().getAbsolutePath());
             progress.setValue(80);
             Method method;
             try {
@@ -101,28 +87,17 @@ public class Patcher {
                 return;
             }
             System.out.println("Invoking wrapped instance: " + method.getDeclaringClass().getCanonicalName() + " / " + method.toGenericString());
-            progress.setValue(90);
+            progress.setValue(100);
+            frame.setVisible(false);
             try {
                 method.invoke(null, (Object) args);
             } catch (IllegalAccessException | InvocationTargetException e) {
+                frame.setVisible(true);
                 status.setText("Error: Could not invoke main method");
-                progress.setValue(100);
                 close.setEnabled(true);
                 System.err.println("Error invoking main method");
                 e.printStackTrace();
-                return;
             }
-            status.setText("Done!");
-            progress.setValue(100);
-            new Thread(() -> {
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                frame.setVisible(false);
-            }).start();
-            System.out.println(path);
         }
     }
 
@@ -215,7 +190,7 @@ public class Patcher {
             try {
                 status.setText("Patching the vanilla jar...");
                 System.out.println("Patching the vanilla jar...");
-                Patch.patch(readBytes(vanillaJar), readFully(Patcher.class.getResourceAsStream("/patch.bz2")), new FileOutputStream(path.toFile()));
+                Patch.patch(readBytes(vanillaJar), readFully(Objects.requireNonNull(Patcher.class.getResourceAsStream("/patch.bz2"))), new FileOutputStream(path.toFile()));
             } catch (CompressorException | IOException | InvalidHeaderException e) {
                 status.setText("Error: Failed to patch the vanilla jar");
                 progress.setValue(100);
