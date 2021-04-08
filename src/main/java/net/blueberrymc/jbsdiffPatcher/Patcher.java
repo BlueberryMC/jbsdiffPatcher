@@ -269,7 +269,7 @@ public class Patcher {
     public static boolean isDirty(MessageDigest digest, Path file, byte[] hash) {
         if (!Files.exists(file)) return true;
         byte[] bytes = readBytes(file);
-        return Arrays.equals(hash, digest.digest(bytes));
+        return !Arrays.equals(hash, digest.digest(bytes));
     }
 
     public static String getMainClass(Path file) throws IOException {
