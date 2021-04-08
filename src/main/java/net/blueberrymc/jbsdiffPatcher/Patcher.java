@@ -201,6 +201,8 @@ public class Patcher {
                 progress.setValue(100);
                 close.setEnabled(true);
                 System.err.println("Error: Downloaded vanilla jar file doesn't match the expected hash");
+                System.err.println("Expected: " + bytesToHex(data.vanillaHash));
+                System.err.println("Actual: " + bytesToHex(digest.digest(readBytes(path))));
                 return null;
             }
         }
@@ -228,6 +230,8 @@ public class Patcher {
                 progress.setValue(100);
                 close.setEnabled(true);
                 System.err.println("Error: Patched jar file doesn't match the expected hash");
+                System.err.println("Expected: " + bytesToHex(data.patchedHash));
+                System.err.println("Actual: " + bytesToHex(digest.digest(readBytes(path))));
                 return null;
             }
         }
@@ -275,5 +279,15 @@ public class Patcher {
         ) {
             return js.getManifest().getMainAttributes().getValue("Main-Class");
         }
+    }
+
+    public static String bytesToHex(byte[] bytes) {
+        final StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            final String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 }
