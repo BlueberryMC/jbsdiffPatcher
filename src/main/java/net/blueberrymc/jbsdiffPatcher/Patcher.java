@@ -35,6 +35,12 @@ public class Patcher {
     public static final JButton close = new JButton();
 
     public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            System.out.println("L&F Initialization failed, using default theme.");
+            e.printStackTrace();
+        }
         JFrame frame = new JFrame();
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout(FlowLayout.CENTER, 100000000, 5));
