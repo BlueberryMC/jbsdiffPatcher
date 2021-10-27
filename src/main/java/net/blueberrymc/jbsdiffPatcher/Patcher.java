@@ -30,9 +30,17 @@ import java.util.jar.JarInputStream;
 // /patch.properties
 // /patch.bz2
 public class Patcher {
+    public static final JFrame frame = new JFrame();
     public static final JLabel status = new JLabel();
     public static final JProgressBar progress = new JProgressBar();
     public static final JButton close = new JButton();
+
+    private static void setVisible() {
+        if (frame.isVisible()) return;
+        if (!(GraphicsEnvironment.isHeadless() || Boolean.getBoolean("blueberry.nogui"))) {
+            frame.setVisible(true);
+        }
+    }
 
     public static void main(String[] args) {
         try {
@@ -41,7 +49,6 @@ public class Patcher {
             System.out.println("L&F Initialization failed, using default theme.");
             e.printStackTrace();
         }
-        JFrame frame = new JFrame();
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout(FlowLayout.CENTER, 100000000, 5));
         status.setText("Setting up environment");
@@ -55,7 +62,7 @@ public class Patcher {
         frame.setSize(400, 120);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        if (!(GraphicsEnvironment.isHeadless() || Boolean.getBoolean("blueberry.nogui"))) frame.setVisible(true);
+        if (Boolean.getBoolean("blueberry.openFrameOnStartup")) setVisible();
         frame.setTitle("Minecraft Patcher");
         Path path = setup();
         if (path != null) {
@@ -65,12 +72,14 @@ public class Patcher {
             try {
                 mainClass = getMainClass(path);
                 if (mainClass == null) {
+                    setVisible();
                     status.setText("Could not find main class");
                     progress.setValue(100);
                     close.setEnabled(true);
                     return;
                 }
             } catch (IOException ex) {
+                setVisible();
                 status.setText("Error: Could not read patched jar");
                 progress.setValue(100);
                 close.setEnabled(true);
@@ -85,6 +94,7 @@ public class Patcher {
                 Class<?> clazz = Class.forName(mainClass, true, ClassLoader.getSystemClassLoader());
                 method = clazz.getMethod("main", String[].class);
             } catch (ClassNotFoundException | NoSuchMethodException e) {
+                setVisible();
                 status.setText("Error: Could not load main class or no main method");
                 progress.setValue(100);
                 close.setEnabled(true);
@@ -98,7 +108,7 @@ public class Patcher {
             try {
                 method.invoke(null, (Object) args);
             } catch (IllegalAccessException | InvocationTargetException e) {
-                frame.setVisible(true);
+                setVisible();
                 status.setText("Error: Could not invoke main method");
                 close.setEnabled(true);
                 System.err.println("Error invoking main method");
@@ -112,6 +122,7 @@ public class Patcher {
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
+            setVisible();
             status.setText("Error: Could not create hashing instance");
             progress.setValue(100);
             close.setEnabled(true);
@@ -173,6 +184,7 @@ public class Patcher {
     public static Path validateVanillaJar(MessageDigest digest, Path cache, PatchData data) {
         Path path = cache.resolve("vanilla_" + data.version + ".jar");
         if (isDirty(digest, path, data.vanillaHash)) {
+            setVisible();
             status.setText("Downloading vanilla jar...");
             System.out.println("Downloading vanilla jar...");
             FileDownload.download(path, data.vanillaUrl);
@@ -193,6 +205,7 @@ public class Patcher {
     public static Path validatePatchedJar(MessageDigest digest, Path cache, PatchData data, Path vanillaJar) {
         Path path = cache.resolve("patched_" + data.version + ".jar");
         if (isDirty(digest, path, data.patchedHash)) {
+            setVisible();
             try {
                 status.setText("Patching the vanilla jar...");
                 System.out.println("Patching the vanilla jar...");
