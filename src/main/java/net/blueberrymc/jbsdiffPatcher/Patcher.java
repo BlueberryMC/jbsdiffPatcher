@@ -2,7 +2,7 @@ package net.blueberrymc.jbsdiffPatcher;
 
 import io.sigpipe.jbsdiff.InvalidHeaderException;
 import io.sigpipe.jbsdiff.Patch;
-import net.blueberrymc.native_util.NativeUtil;
+import net.blueberrymc.nativeutil.NativeUtil;
 import org.apache.commons.compress.compressors.CompressorException;
 
 import javax.swing.*;
