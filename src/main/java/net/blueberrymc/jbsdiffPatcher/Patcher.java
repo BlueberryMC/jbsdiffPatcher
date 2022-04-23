@@ -9,8 +9,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,24 +28,33 @@ import java.util.jar.JarInputStream;
 // /patch.properties
 // /patch.bz2
 public class Patcher {
-    public static final JFrame frame = new JFrame();
+    public static boolean headless = GraphicsEnvironment.isHeadless() || Boolean.getBoolean("blueberry.nogui");
+    public static JFrame frame = null;
     public static final JLabel status = new JLabel();
     public static final JProgressBar progress = new JProgressBar();
     public static final JButton close = new JButton();
 
     private static void setVisible() {
-        if (frame.isVisible()) return;
-        if (!(GraphicsEnvironment.isHeadless() || Boolean.getBoolean("blueberry.nogui"))) {
-            frame.setVisible(true);
+        if (frame != null) {
+            if (frame.isVisible()) return;
+            if (!(GraphicsEnvironment.isHeadless() || Boolean.getBoolean("blueberry.nogui"))) {
+                frame.setVisible(true);
+            }
         }
     }
 
     public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            System.out.println("L&F Initialization failed, using default theme.");
-            e.printStackTrace();
+        if (args.length > 0 && args[0].equals("nogui")) {
+            headless = true;
+        }
+        if (!headless) {
+            frame = new JFrame();
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                System.out.println("L&F Initialization failed, using default theme.");
+                e.printStackTrace();
+            }
         }
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout(FlowLayout.CENTER, 100000000, 5));
@@ -58,12 +65,14 @@ public class Patcher {
         panel.add(status);
         panel.add(progress);
         panel.add(close);
-        frame.add(panel);
-        frame.setSize(400, 120);
-        frame.setLocationRelativeTo(null);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        if (Boolean.getBoolean("blueberry.openFrameOnStartup")) setVisible();
-        frame.setTitle("Minecraft Patcher");
+        if (frame != null) {
+            frame.add(panel);
+            frame.setSize(400, 120);
+            frame.setLocationRelativeTo(null);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            if (Boolean.getBoolean("blueberry.openFrameOnStartup")) setVisible();
+            frame.setTitle("Minecraft Patcher");
+        }
         Path path = setup();
         if (path != null) {
             status.setText("Starting Minecraft...");
@@ -76,6 +85,7 @@ public class Patcher {
                     status.setText("Could not find main class");
                     progress.setValue(100);
                     close.setEnabled(true);
+                    System.err.println("Could not find main class");
                     return;
                 }
             } catch (IOException ex) {
@@ -104,7 +114,9 @@ public class Patcher {
             }
             System.out.println("Invoking wrapped instance: " + method.getDeclaringClass().getCanonicalName() + " / " + method.toGenericString());
             progress.setValue(100);
-            frame.setVisible(false);
+            if (frame != null) {
+                frame.setVisible(false);
+            }
             try {
                 method.invoke(null, (Object) args);
             } catch (IllegalAccessException | InvocationTargetException e) {
@@ -209,7 +221,7 @@ public class Patcher {
             try {
                 status.setText("Patching the vanilla jar...");
                 System.out.println("Patching the vanilla jar...");
-                Patch.patch(readBytes(vanillaJar), readFully(Objects.requireNonNull(Patcher.class.getResourceAsStream("/patch.bz2"))), new FileOutputStream(path.toFile()));
+                Patch.patch(readBytes(vanillaJar), readFully(Objects.requireNonNull(Patcher.class.getResourceAsStream("/patch.bz2"))), Files.newOutputStream(path));
             } catch (CompressorException | IOException | InvalidHeaderException e) {
                 status.setText("Error: Failed to patch the vanilla jar");
                 progress.setValue(100);
@@ -268,7 +280,7 @@ public class Patcher {
 
     public static String getMainClass(Path file) throws IOException {
         try (
-                InputStream in = new BufferedInputStream(new FileInputStream(file.toFile()));
+                InputStream in = new BufferedInputStream(Files.newInputStream(file));
                 JarInputStream js = new JarInputStream(in)
         ) {
             return js.getManifest().getMainAttributes().getValue("Main-Class");
